@@ -52,7 +52,7 @@ def create_data_loaders(datadir, cfgs):
 
     if cfgs.exclude_unlabeled:
         sampler = SubsetRandomSampler(labeled_idxs)
-        batch_sampler = BatchSampler(sampler, args.batch_size, drop_last=True)
+        batch_sampler = BatchSampler(sampler, cfgs.batch_size, drop_last=True)
     elif cfgs.labeled_batch_size:
         batch_sampler = TwoStreamBatchSampler(
             unlabeled_idxs, labeled_idxs, cfgs.batch_size, cfgs.labeled_batch_size)
@@ -71,3 +71,9 @@ def create_data_loaders(datadir, cfgs):
         drop_last=False)
 
     return train_loader, eval_loader
+
+if __name__ == "__main__":
+    from config import Config
+    cfg = Config()
+    train_loader, val_loader = create_data_loaders("datadir/cifar10", cfg)
+    print(len(train_loader.dataset), train_loader.dataset)

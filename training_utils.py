@@ -33,7 +33,6 @@ def accuracy(preds, targets, topk=(1,)):
 
     return res
     
-
 class AverageMeter:
     """Computes and stores the average and current value"""
 

@@ -36,10 +36,10 @@ def get_model(model_name, pretrained=True,
     # detach params
     if ema:
         for param in model.parameters():
-            model.detach_()
+            param.detach_()
 
     return model
-    
+
 if __name__ == "__main__":
     model_name = "shake_resnet26"
     model = get_model(model_name, pretrained=True)

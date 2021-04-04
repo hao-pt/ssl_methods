@@ -94,6 +94,7 @@ class ShakeBlock(nn.Module):
 
         x = ShakeShake.apply(x1, x2, self.training)
         residual = input if not self.shortcut else self.shortcut(input)
+        print(x.shape, residual.shape)
 
         return x+residual
 
@@ -179,4 +180,9 @@ class ShakeResNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
+
+if __name__ == "__main__":
+    x = torch.randn((3,3,32,32))
+    model = ShakeResNet(3, [16,96,96*2,96*4],26,10)
+    model(x)
 

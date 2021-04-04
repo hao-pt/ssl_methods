@@ -37,7 +37,7 @@ class TwoStreamBatchSampler(Sampler):
 
 def relabel_dataset(dataset, labels):
     unlabeled_idxs = []
-    for idx, (path, _) in enumerate(len(dataset.imgs)):
+    for idx, (path, _) in enumerate(dataset.imgs):
         filename = os.path.basename(path)
         # set label for image
         if filename in labels:

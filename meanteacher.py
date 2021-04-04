@@ -1,4 +1,4 @@
-import tqdm
+from tqdm import tqdm
 import time
 import collections
 
@@ -24,29 +24,29 @@ class Trainer:
         self.ema_model = ema_model
         self.optimizer = optimizer
 
-        self.sup_criterion = nn.CrossEntropyLoss(ignore_index=self.cfg.UNLABLED) # mark -1 as unlabeled data
+        self.sup_criterion = nn.CrossEntropyLoss(ignore_index=self.cfg.NO_LABEL) # mark -1 as unlabeled data
         self.unp_criterion = nn.MSELoss()
 
         self._create_ema_updater()
-        self._create_summary_writer()
 
-    def _create_summary_writer(self):
-        time_str = time.strftime('%Y-%m-%d-%H-%M')
-        self.writer = SummaryWriter(f'runs/meanteacher/time_str')
+    def _create_summary_writer(self, rundir):
+        self.writer = SummaryWriter(rundir)
 
     def train(self, epoch, data_loader):
         self.model.train()
         self.ema_model.train()
 
         pbar = tqdm(data_loader)
-        meters = collections.defaultdict(AverageMeter())
+        meters = collections.defaultdict(lambda: AverageMeter())
 
-        for i, (data, ema_data, targets) in enumerate(pbar):
+        for i, ((data, ema_data), targets) in enumerate(data_loader):
             pbar.set_description(f"Train Epoch: {epoch} [{i}/{len(pbar)}]")
 
             sdata, tdata = data.to(self.cfg.device), ema_data.to(self.cfg.device)
             targets = targets.to(self.cfg.device)
             labeled_batch_size = targets.ne(-1).sum()
+
+            print(sdata.shape)
 
             # Train student on batch1
             spreds = self.model(sdata)
@@ -57,17 +57,17 @@ class Trainer:
                 tpreds.requires_grad = False # disable gradient
 
             # compute supervised loss for student predictions
-            spreds = F.softmax(spreds)
+            spreds_softm = F.softmax(spreds)
             student_sup_loss = self.sup_loss(spreds, targets) 
             meters["student_sup_loss"].update(student_sup_loss.item())
 
             # compute supervised loss for teacher predictions
-            tpreds = F.softmax(tpreds)
+            tpreds_softm = F.softmax(tpreds)
             teacher_sup_loss = self.sup_loss(tpreds, targets) 
             meters["teacher_sup_loss"].update(teacher_sup_loss.item())
 
             # compute unsupervised loss between teacher and student predictions
-            unp_loss = self.unp_loss(spreds, tpreds) / self.cfg.num_classes
+            unp_loss = self.unp_loss(spreds_softm, tpreds_softm) / self.cfg.num_classes
             meters["unp_loss"].update(unp_loss.item())
 
             # main objective
@@ -119,6 +119,8 @@ class Trainer:
                 self.writer.add_scalar("train_acc/{k}", v.avg)
             else: # train_loss
                 self.writer.add_scalar("train_loss/{k}", v.avg)
+
+        pbar.close()
 
     def val(self, epoch, data_loader):
         """
@@ -191,10 +193,10 @@ class Trainer:
         return meters["student_top1_acc"].avg, meters["teacher_top1_acc"].avg
 
     def _set_device(self):
-        if len(self.cfg.device_ids) > 1:
+        if self.cfg.device_ids != '-1' and len(self.cfg.device_ids) > 1:
             self.model = nn.DataParallel(
                 self.model, device_ids=self.cfg.device_ids,
-                chunk_sizes=self.chunk_sizes).to(self.cfg.device)
+                chunk_sizes=self.cfg.chunk_sizes).to(self.cfg.device)
 
             self.ema_model = nn.DataParallel(
                 self.ema_model, device_ids=self.cfg.device_ids,
