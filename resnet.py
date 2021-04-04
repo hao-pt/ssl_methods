@@ -6,15 +6,6 @@ from torch.autograd import Variable
 import numpy as np
 
 
-def get_shake_resnet(in_ch, 
-    depth=26, width=96, num_classes=10):
-    out_chs = [16, width, width*2, width*4] # output channels of 4 blocks
-    model = ShakeResNet(in_ch, 
-        out_chs, 
-        depth, 
-        num_classes)
-
-    return model
 
 class BottleNeck(nn.Module):
     def __init__(self, in_ch, out_ch, times) -> None:
@@ -187,11 +178,5 @@ class ShakeResNet(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
-
-
-if __name__ == "__main__":
-    model = get_shake_resnet(3)
-    print(model)
-    
 
 
