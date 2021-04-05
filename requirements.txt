@@ -2,4 +2,3 @@ numpy
 matplotlib
 tensorboard
 tqdm
-json-tricks
