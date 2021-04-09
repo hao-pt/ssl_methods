@@ -23,7 +23,7 @@ parser.add_argument("--data_dir", default="datadir",
     help="Data directory for storing data")
 args = parser.parse_args()
 
-data_dir = args.data_dir
+data_dir = os.path.abspath(args.data_dir)
 test_dir = os.path.abspath(os.path.join(data_dir, 'test'))
 train_dir = os.path.abspath(os.path.join(data_dir, 'train+val'))
 
@@ -65,7 +65,7 @@ for source_file_path, _ in cifar10.train_list:
 # Create symbolic links for train images and val images
 output_dir = f"{data_dir}/cifar10" 
 splits = ["train", "val"]
-split_pattern = "data/cifar10_%s.txt"
+split_pattern = os.path.abspath("data/cifar10_%s.txt")
 for split in splits:
     src_dir = train_dir
     dst_dir = f"{output_dir}/{split}"
