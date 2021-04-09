@@ -45,7 +45,7 @@ if __name__ == "__main__":
     for epoch in range(cfg.epochs):
         trainer.train(epoch, train_loader)
 
-        if epoch % cfg.eval_step == 0:
+        if epoch % cfg.eval_interval == 0:
             # get top-1 accuracy of student and teacher
             acc, ema_acc = trainer.val(epoch, val_loader)
             
@@ -63,4 +63,3 @@ if __name__ == "__main__":
             "best_acc": best_acc}, is_best, epoch)
 
     
-

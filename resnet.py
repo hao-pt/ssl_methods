@@ -36,6 +36,19 @@ class BottleNeck(nn.Module):
         
         return x
 
+class BasicDownsample(nn.Module):
+    def __init__(self, in_ch, out_ch, stride) -> None:
+        super(BasicDownsample, self).__init__()
+
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_ch, out_ch, 1, 
+                    stride=stride, bias=False),
+            nn.BatchNorm2d(out_ch)
+        )
+
+    def forward(self, input):
+        return self.conv(input)
+    
 class ShortCut(nn.Module):
     def __init__(self, in_ch, out_ch, stride):
         super(ShortCut, self).__init__()
@@ -47,9 +60,13 @@ class ShortCut(nn.Module):
         # self.bn = nn.BatchNorm2d(out_ch)
 
         # mean teacher paper
-        self.conv = nn.Conv2d(in_ch*2, out_ch, 
-            1, stride=1, padding=0, groups=2)
-        self.bn = nn.BatchNorm2d(out_ch)
+        # self.conv = nn.Conv2d(in_ch*2, out_ch, 
+        #     1, stride=1, padding=0, groups=2)
+        self.conv = nn.Sequential(
+            nn.ReLU(inplace=False),
+            nn.Conv2d(in_ch*2, out_ch, 1, stride=1, padding=0, groups=2),
+            nn.BatchNorm2d(out_ch)
+        )
 
     def forward(self, input): 
         # shake-shake paper
@@ -68,24 +85,24 @@ class ShortCut(nn.Module):
 
         # mean teacher paper
         # split x into 2 sub-tensor: (1) even x,y (2) odd x,y 
-        x = torch.cat((input[...,0::2, 0::2], input[...,1::2, 1::2]), dim=1)
-        x = F.relu(x)
+        x = torch.cat((input[..., 0::2, 0::2], input[..., 1::2, 1::2]), dim=1)
         x = self.conv(x)
-        x = self.bn(x)
 
         return x
         
-
 class ShakeBlock(nn.Module):
-    def __init__(self, in_ch, out_ch, stride=1, downsample=None):
+    def __init__(self, in_ch, out_ch, stride=1):
         super(ShakeBlock, self).__init__()
         
         self.convs_brach1 = self._make_branch(in_ch, out_ch, stride)
         self.convs_brach2 = self._make_branch(in_ch, out_ch, stride)
 
-        self.shortcut = None if in_ch == out_ch else ShortCut(in_ch, out_ch, stride)
-        
-        self.downsample = downsample
+        if in_ch == out_ch:
+            self.shortcut = None
+        elif stride == 1:
+            self.shortcut = BasicDownsample(in_ch, out_ch, stride)
+        else:
+            self.shortcut = ShortCut(in_ch, out_ch, stride)
 
     def forward(self, input):
 
@@ -94,7 +111,6 @@ class ShakeBlock(nn.Module):
 
         x = ShakeShake.apply(x1, x2, self.training)
         residual = input if not self.shortcut else self.shortcut(input)
-        print(x.shape, residual.shape)
 
         return x+residual
 
@@ -136,7 +152,8 @@ class ShakeResNet(nn.Module):
     def __init__(self, in_ch, out_chs, depth, num_classes):
         super(ShakeResNet, self).__init__()
         # first layer
-        self.conv1 = nn.Conv2d(in_ch, out_chs[0], kernel_size=3, stride=1, padding=1, bias=False)
+        self.conv1 = nn.Conv2d(in_ch, out_chs[0], kernel_size=3, 
+            stride=1, padding=1, bias=False)
 
         self.num_units = (depth-2)//6 # number of residual units in one conv block
 
@@ -183,6 +200,9 @@ class ShakeResNet(nn.Module):
 
 if __name__ == "__main__":
     x = torch.randn((3,3,32,32))
+    print(x)
     model = ShakeResNet(3, [16,96,96*2,96*4],26,10)
-    model(x)
+    print(model)
+    y = model(x)
+    print(y)
 

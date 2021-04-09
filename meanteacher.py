@@ -46,7 +46,6 @@ class Trainer:
             targets = targets.to(self.cfg.device)
             labeled_batch_size = targets.ne(-1).sum()
 
-            print(sdata.shape)
 
             # Train student on batch1
             spreds = self.model(sdata)
@@ -58,16 +57,16 @@ class Trainer:
 
             # compute supervised loss for student predictions
             spreds_softm = F.softmax(spreds)
-            student_sup_loss = self.sup_loss(spreds, targets) 
+            student_sup_loss = self.sup_criterion(spreds, targets) 
             meters["student_sup_loss"].update(student_sup_loss.item())
 
             # compute supervised loss for teacher predictions
             tpreds_softm = F.softmax(tpreds)
-            teacher_sup_loss = self.sup_loss(tpreds, targets) 
+            teacher_sup_loss = self.sup_criterion(tpreds, targets) 
             meters["teacher_sup_loss"].update(teacher_sup_loss.item())
 
             # compute unsupervised loss between teacher and student predictions
-            unp_loss = self.unp_loss(spreds_softm, tpreds_softm) / self.cfg.num_classes
+            unp_loss = self.unp_criterion(spreds_softm, tpreds_softm) / self.cfg.num_classes
             meters["unp_loss"].update(unp_loss.item())
 
             # main objective
@@ -150,12 +149,12 @@ class Trainer:
 
             # compute supervised loss for student predictions
             spreds = F.softmax(spreds)
-            student_sup_loss = self.sup_loss(spreds, targets) 
+            student_sup_loss = self.sup_criterion(spreds, targets) 
             meters["student_sup_loss"].update(student_sup_loss.item())
 
             # compute supervised loss for teacher predictions
             tpreds = F.softmax(tpreds)
-            teacher_sup_loss = self.sup_loss(tpreds, targets) 
+            teacher_sup_loss = self.sup_criterion(tpreds, targets) 
             meters["teacher_sup_loss"].update(teacher_sup_loss.item())
 
             # compute accuracy and error for student model

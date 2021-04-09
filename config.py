@@ -1,8 +1,8 @@
 import argparse
 import json
-import jsonpickle
 
-NUM_CLASSES = {"cifar10": 10,
+NUM_CLASSES = {
+    "cifar10": 10,
     "imagenet": 1000}
 class Config:
     def __init__(self):
@@ -56,9 +56,9 @@ class Config:
             help="#Epochs")
         hyper_param_group.add_argument("--lr", type=float, default=1e-3,
             help="Learning rate")
-        hyper_param_group.add_argument("--batch_size", type=float, default=32,
+        hyper_param_group.add_argument("--batch_size", type=int, default=32,
             help="Batch size")
-        hyper_param_group.add_argument("--labeled_batch_size", type=float, default=16,
+        hyper_param_group.add_argument("--labeled_batch_size", type=int, default=16,
             help="Labeled batch size")
         hyper_param_group.add_argument("--unp_weight", type=float, default=10,
             help="Unsupervised weight")
@@ -80,6 +80,8 @@ class Config:
                              help='Ema decay during rampup phase')
         hyper_param_group.add_argument('--rampup_steps', type=int, default=20000,
                              help='Change ema_decay to 0.999 if step > rampup_steps else 0.99')
+        hyper_param_group.add_argument('--rampup_length', type=int, default=30,
+                             help='Rampup length')
         
 
         return parser.parse_args(namespace=self)
