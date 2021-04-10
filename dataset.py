@@ -36,6 +36,14 @@ def cifar10(datadir):
 
 DATASET_ZOO = {"cifar10": cifar10} 
 def create_data_loaders(datadir, cfgs):
+    """
+    Load images and sample data from train and val set
+
+    Returns:
+    ---
+    - train_loader
+    - val_loader
+    """
     data_transformer = DATASET_ZOO[cfgs.dataset]
     train_transformation, eval_transformation, _, _ = data_transformer(datadir).values()
     

@@ -11,7 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from model_factory import get_model
 from ema import ExponentialMovingAverage
 
-from training_utils import AverageMeter, consistency_rampup_weight, accuracy
+from training_utils import AverageMeter, consistency_rampup_weight, accuracy, lr_schedule
   
 class Trainer:
     def __init__(self, cfg, 
@@ -42,10 +42,11 @@ class Trainer:
         for i, ((data, ema_data), targets) in enumerate(data_loader):
             pbar.set_description(f"Train Epoch: {epoch} [{i}/{len(pbar)}]")
 
+            lr_schedule(self.optimizer, epoch, self.cfg, i, len(data_loader))
+
             sdata, tdata = data.to(self.cfg.device), ema_data.to(self.cfg.device)
             targets = targets.to(self.cfg.device)
             labeled_batch_size = targets.ne(-1).sum()
-
 
             # Train student on batch1
             spreds = self.model(sdata)
@@ -56,18 +57,22 @@ class Trainer:
                 tpreds.requires_grad = False # disable gradient
 
             # compute supervised loss for student predictions
-            spreds_softm = F.softmax(spreds)
             student_sup_loss = self.sup_criterion(spreds, targets) 
             meters["student_sup_loss"].update(student_sup_loss.item())
 
             # compute supervised loss for teacher predictions
-            tpreds_softm = F.softmax(tpreds)
             teacher_sup_loss = self.sup_criterion(tpreds, targets) 
             meters["teacher_sup_loss"].update(teacher_sup_loss.item())
 
             # compute unsupervised loss between teacher and student predictions
-            unp_loss = self.unp_criterion(spreds_softm, tpreds_softm) / self.cfg.num_classes
-            meters["unp_loss"].update(unp_loss.item())
+            if self.cfg.consistency_weight:
+                spreds_softm = F.softmax(spreds, dim=1)
+                tpreds_softm = F.softmax(tpreds, dim=1)
+                unp_loss = self.unp_criterion(spreds_softm, tpreds_softm) / self.cfg.num_classes
+                meters["unp_loss"].update(unp_loss.item())
+            else:
+                unp_loss = 0.0
+                meters["unp_loss"].update(unp_loss.item())
 
             # main objective
             alpha = consistency_rampup_weight(self.cfg.unp_weight, epoch, self.cfg.rampup_length)
@@ -148,12 +153,12 @@ class Trainer:
             tpreds = self.model(data)
 
             # compute supervised loss for student predictions
-            spreds = F.softmax(spreds)
+            spreds_softm = F.softmax(spreds, dim=1)
             student_sup_loss = self.sup_criterion(spreds, targets) 
             meters["student_sup_loss"].update(student_sup_loss.item())
 
             # compute supervised loss for teacher predictions
-            tpreds = F.softmax(tpreds)
+            tpreds_softm = F.softmax(tpreds, dim=1)
             teacher_sup_loss = self.sup_criterion(tpreds, targets) 
             meters["teacher_sup_loss"].update(teacher_sup_loss.item())
 

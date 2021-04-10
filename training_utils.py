@@ -2,20 +2,50 @@ import numpy as np
 from numpy.core.numeric import correlate
 import torch
 
+def sigmoid_rampup(current_t, rampup_length=100):
+    """Exponential rampup from https://arxiv.org/abs/1610.02242"""
+    if rampup_length == 0:
+        return 1.0
+    current_t =  np.clip(current_t, 0, rampup_length) 
+
+    return float(np.exp(-5.0*(1-current_t/rampup_length)**2))
+
+def linear_rampup(current_t, rampup_length):
+    if current_t >= rampup_length:
+        return 1
+
+    return current_t / rampup_length
+
+def cosine_rampdown(current_t, rampdown_length):
+    """Cosine rampdown from https://arxiv.org/abs/1608.03983"""
+    assert 0 <= current_t <= rampdown_length
+    return float(.5 * (np.cos(np.pi * current_t / rampdown_length) + 1))
+    
 def consistency_rampup_weight(weight, epoch, rampup_length):
     """
     Computing consistency weight during rampup phase since output distribution of model varies alot 
     in early stage of training
     """
-    def sigmoid_rampup(current_t, rampup_length=100):
-        """Exponential rampup from https://arxiv.org/abs/1610.02242"""
-        if rampup_length == 0:
-            return 1.0
-        current_t =  np.clip(current_t, 0, rampup_length) 
-
-        return float(np.exp(-5.0*(1-current_t/rampup_length)**2))
-
     return weight*sigmoid_rampup(epoch, rampup_length)
+
+def lr_schedule(optimizer, epoch, cfg, cur_step, total_steps):
+    """
+    Learning rate scheduler
+    - linear rampup 
+    - cosine rampdown
+    """
+    lr = cfg.lr
+    num_steps += cur_step/total_steps
+
+    # linear ramp-up for handling large batch size https://arxiv.org/abs/1706.02677
+    lr = linear_rampup(num_steps, cfg.lr_rampup_length) * (lr - cfg.initial_lr) + cfg.initial_lr
+    
+    if cfg.lr_rampdown_length:
+        lr *= cosine_rampdown(num_steps, cfg.lr_rampdown_length)
+
+    # set lr for all params
+    for param_group in optimizer.param_groups:
+        param_group["lr"] = lr
 
 def accuracy(preds, targets, topk=(1,)):
     # get topk results

@@ -4,6 +4,7 @@ import json
 NUM_CLASSES = {
     "cifar10": 10,
     "imagenet": 1000}
+
 class Config:
     def __init__(self):
         self.create_args()
@@ -81,8 +82,14 @@ class Config:
         hyper_param_group.add_argument('--rampup_steps', type=int, default=20000,
                              help='Change ema_decay to 0.999 if step > rampup_steps else 0.99')
         hyper_param_group.add_argument('--rampup_length', type=int, default=30,
-                             help='Rampup length')
-        
+                             help='Rampup length for weight of consistency loss')
+        hyper_param_group.add_argument('--lr_rampup_length', type=int, default=0,
+                             help='Rampup length of learning rate in early training')
+        hyper_param_group.add_argument('--lr_rampdown_length', type=int, default=0,
+                             help='Rampdown length of learning rate')
+        hyper_param_group.add_argument('--initial_lr', type=float, default=0.,
+                             help='Initial learning rate for linear rampup')
+
 
         return parser.parse_args(namespace=self)
 

@@ -8,7 +8,7 @@ from dataset import create_data_loaders
 from model_factory import get_model
 from meanteacher import Trainer
 
-from model_utils import save_checkpoint
+from model_utils import save_checkpoint, load_checkpoint
 
 if __name__ == "__main__":
     cfg = Config()
@@ -27,13 +27,18 @@ if __name__ == "__main__":
         cfg.lr, 
         weight_decay=cfg.weight_decay,
         nesterov=cfg.nesterov)
-    
 
+    # resume training
+    last_epoch = 0
+    if cfg.resume:
+        model, ema_model, optimizer, last_epoch = load_checkpoint(model, ema_model, optimizer, cfg.resume)
+    
     time_str = time.strftime('%Y-%m-%d-%H-%M')
     rundir = f'{cfg.log_dir}/meanteacher/{time_str}'
     os.makedirs(rundir, exist_ok=True)
     cfg.save(rundir) # save configs
 
+    # create trainer
     trainer = Trainer(cfg, model, ema_model, optimizer)
     trainer._set_device() 
     trainer._create_summary_writer(rundir)
@@ -42,7 +47,7 @@ if __name__ == "__main__":
     ckpt_dir = f"{cfg.weight_dir}/{cfg.dataset}/meanteacher"
     os.makedirs(ckpt_dir, exist_ok=True)
 
-    for epoch in range(cfg.epochs):
+    for epoch in range(last_epoch, cfg.epochs):
         trainer.train(epoch, train_loader)
 
         if epoch % cfg.eval_interval == 0:
@@ -51,6 +56,7 @@ if __name__ == "__main__":
             
             if ema_acc > best_acc:
                 best_acc = ema_acc
+                is_best = True
             else:
                 is_best = False
 
