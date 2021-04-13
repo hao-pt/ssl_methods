@@ -2,3 +2,4 @@ numpy
 matplotlib
 tensorboard
 tqdm
+pandas

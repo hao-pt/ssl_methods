@@ -1,3 +1,5 @@
+This is unofficial implementation of MeanTeacher that purposes to reproduce results of Semi-Supervised Learning method for Image Classification problem.
+
 ## Setup
 ```
 conda create -n ssl python=3.7
