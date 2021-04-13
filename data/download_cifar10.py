@@ -94,7 +94,7 @@ print("Create symbolic links for test images")
 src_dir = test_dir
 dst_dir = f"{output_dir}/test"
 for root, folders, files in os.walk(test_dir):
-    for filename in filenames:
+    for filename in files:
         class_name = os.path.splitext(filename)[0].split("_")[-1]
         sub_folder = "%s/%s"
         os.makedirs(sub_folder%(dst_dir, class_name), exist_ok=True)
@@ -106,16 +106,3 @@ for root, folders, files in os.walk(test_dir):
                 f"{sub_folder%(dst_dir, class_name)}/{filename}")
         except:
             print(f"{sub_folder%(dst_dir, class_name)}/{filename} exits")
-
-# split_file = "/home/hp/Desktop/ssl_methods/data/link_cifar10_train.sh"
-# with open(split_file) as f:
-#     data = f.read().split("\n")[9:]
-#     file_names = []
-#     for line in data:
-#         filename =  line.split(" ")[-1].split("/")[-1]
-#         file_names.append(filename)
-
-# output_split_file = "data/cifar10_train.txt"
-# with open(output_split_file, "wt") as f:
-#     for filename in file_names:
-#         f.write(filename+"\n")

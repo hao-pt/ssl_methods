@@ -2,7 +2,7 @@ import os
 import torch
 import shutil
 
-def load_checkpoint(model, ema_model, optimizer, ckpt_path):
+def load_checkpoint(model, ema_model, ckpt_path, optimizer=None):
     """
     Load model checkpoint
     """
@@ -11,7 +11,8 @@ def load_checkpoint(model, ema_model, optimizer, ckpt_path):
     last_epoch = state["epoch"]
     model.load_state_dict(state["state_dict"])
     ema_model.load_state_dict(state["ema_state_dict"])
-    optimizer.load_state_dict(state["optimizer"])
+    if optimizer:
+        optimizer.load_state_dict(state["optimizer"])
 
     return model, ema_model, optimizer, last_epoch
 

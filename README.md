@@ -12,3 +12,25 @@ Cifar:
 ```
 python data/download_cifar10.py --data_dir datadir
 ```
+
+## Run:
+Train on CIFAR10
+```
+python main.py \
+    --dataset cifar10 \
+    --labels data/cifar10_labels/4000_balanced_labels/00.txt \
+    --model_arch shake_resnet26 \
+    --unp_weight 100 \
+    --rampup_length 5 \
+    --labeled_batch_size 62 \
+    --batch_size 256 \
+    --epochs 180
+```
+Evalate on CIFAR10
+```
+python test.py --data_dir datadir/cifar10/ \
+    --batch_size 20 \
+    --resume weights/cifar10/meanteacher/best_model.ckpt \
+    --test_set val \
+    --device_ids 0
+```

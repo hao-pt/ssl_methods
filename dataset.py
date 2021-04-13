@@ -72,13 +72,34 @@ def create_data_loaders(datadir, cfgs):
 
     eval_loader = torch.utils.data.DataLoader(
         torchvision.datasets.ImageFolder(evaldir, eval_transformation),
+        batch_size=32, # cfgs.batch_size,
+        shuffle=False,
+        num_workers=2 * cfgs.workers,  # Needs images twice as fast
+        pin_memory=False,
+        drop_last=False)
+
+    return train_loader, eval_loader
+
+def create_test_loader(datadir, cfgs):
+    """
+    Create test loader
+
+    """
+    data_transformer = DATASET_ZOO[cfgs.dataset]
+    _, eval_transformation, _, _ = data_transformer(datadir).values()
+    
+    testdir = os.path.join(datadir, cfgs.test_set)
+
+    dataset = torchvision.datasets.ImageFolder(testdir, eval_transformation)
+    test_loader = torch.utils.data.DataLoader(
+        dataset,
         batch_size=cfgs.batch_size,
         shuffle=False,
         num_workers=2 * cfgs.workers,  # Needs images twice as fast
         pin_memory=True,
         drop_last=False)
 
-    return train_loader, eval_loader
+    return test_loader
 
 if __name__ == "__main__":
     from config import Config

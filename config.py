@@ -11,15 +11,17 @@ class Config:
         self.NO_LABEL = -1 # mark targe for unlabeled data
         self.num_classes = NUM_CLASSES[self.dataset]
 
-        self.chunk_sizes = [self.master_batch_size]
-        rest_batch_size = self.batch_size - self.master_batch_size
-        num_gpus = len(self.device_ids)
-        for i in range(num_gpus - 1):
-            slave_chunk_size = rest_batch_size // (num_gpus - 1)
-            if i < rest_batch_size % (num_gpus - 1):
-                slave_chunk_size += 1
-            self.chunk_sizes.append(slave_chunk_size)
-        print('Training chunk_sizes:', self.chunk_sizes)
+        # self.chunk_sizes = [self.master_batch_size]
+        # rest_batch_size = self.batch_size - self.master_batch_size
+        # num_gpus = len(self.device_ids)
+        # for i in range(num_gpus - 1):
+        #     slave_chunk_size = rest_batch_size // (num_gpus - 1)
+        #     if i < rest_batch_size % (num_gpus - 1):
+        #         slave_chunk_size += 1
+        #     self.chunk_sizes.append(slave_chunk_size)
+        # print('Training chunk_sizes:', self.chunk_sizes)
+
+        self.device_ids = [int(x) for x in self.device_ids.split(",")] if self.device_ids != "-1" else "cpu"
 
     def create_args(self):
         parser = argparse.ArgumentParser(description="Semi supervised learning for methods")
@@ -37,6 +39,8 @@ class Config:
             help="File lists labeled images")
         data_group.add_argument("--exclude_unlabeled", type=bool, default=False,
             help="Exclude unlabeled data")
+        data_group.add_argument("--test_set", type=str, default="test",
+            help="Evaluation set (val/test)")
 
         model_group = parser.add_argument_group(title='Model group')
         model_group.add_argument("--model_arch", default="shake_resnet26", choices=["wide_resnet50_2", 
@@ -53,43 +57,42 @@ class Config:
             help="Batch size of main gpu oftens 0")
 
         hyper_param_group = parser.add_argument_group(title='Hyperameter group')
-        hyper_param_group.add_argument("--epochs", type=int, default=100,
+        hyper_param_group.add_argument("--epochs", type=int, default=180,
             help="#Epochs")
-        hyper_param_group.add_argument("--lr", type=float, default=1e-3,
+        hyper_param_group.add_argument("--lr", type=float, default=0.1,
             help="Learning rate")
         hyper_param_group.add_argument("--batch_size", type=int, default=32,
             help="Batch size")
         hyper_param_group.add_argument("--labeled_batch_size", type=int, default=16,
             help="Labeled batch size")
-        hyper_param_group.add_argument("--unp_weight", type=float, default=10,
+        hyper_param_group.add_argument("--unp_weight", type=float, default=100,
             help="Unsupervised weight")
-        hyper_param_group.add_argument("--ramup_length", type=float, default=30,
-            help="Length of ramup period")
         hyper_param_group.add_argument("--weight_decay", type=float, default=1e-4,
             help="Weight decay")
         hyper_param_group.add_argument("--nesterov", type=bool, default=False,
             help="Use Nesterov in SGD")
-        hyper_param_group.add_argument("--eval_interval", type=int, default=5,
+        hyper_param_group.add_argument("--eval_interval", type=int, default=1,
             help="Evaluation interval on val set")
-        hyper_param_group.add_argument("--print_interval", type=int, default=5,
+        hyper_param_group.add_argument("--print_interval", type=int, default=10,
             help="Print interval for training")
         hyper_param_group.add_argument("--ema_decay", type=float, default=0.999,
             help="Ema decay rate")
         hyper_param_group.add_argument("--use_num_updates", action="store_true",
             help="Use number of updates to compute ema decay")
         hyper_param_group.add_argument('--rampup_decay', type=float, default=0.99,
-                             help='Ema decay during rampup phase')
+            help='Ema decay during rampup phase')
         hyper_param_group.add_argument('--rampup_steps', type=int, default=20000,
-                             help='Change ema_decay to 0.999 if step > rampup_steps else 0.99')
+            help='Change ema_decay to 0.999 if step > rampup_steps else 0.99')
         hyper_param_group.add_argument('--rampup_length', type=int, default=30,
-                             help='Rampup length for weight of consistency loss')
+            help='Rampup length for weight of consistency loss')
         hyper_param_group.add_argument('--lr_rampup_length', type=int, default=0,
-                             help='Rampup length of learning rate in early training')
+            help='Rampup length of learning rate in early training')
         hyper_param_group.add_argument('--lr_rampdown_length', type=int, default=0,
-                             help='Rampdown length of learning rate')
+            help='Rampdown length of learning rate')
         hyper_param_group.add_argument('--initial_lr', type=float, default=0.,
-                             help='Initial learning rate for linear rampup')
-
+            help='Initial learning rate for linear rampup')
+        hyper_param_group.add_argument('--resume', type=str, default="",
+            help='Resume training by trained weights')
 
         return parser.parse_args(namespace=self)
 
@@ -110,7 +113,7 @@ class Config:
 if __name__ == "__main__":
     cfg = Config()
     # print(cfg.data_dir)
-    config_file = r"/home/hp/Desktop/ssl_methods/logs/meanteacher/2021-04-04-18-36/configs.json"
+    # config_file = r"/home/hp/Desktop/ssl_methods/logs/meanteacher/2021-04-04-18-36/configs.json"
     cfg.load(config_file)
     
 

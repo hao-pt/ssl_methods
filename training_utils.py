@@ -35,7 +35,7 @@ def lr_schedule(optimizer, epoch, cfg, cur_step, total_steps):
     - cosine rampdown
     """
     lr = cfg.lr
-    num_steps += cur_step/total_steps
+    num_steps = epoch + cur_step/total_steps
 
     # linear ramp-up for handling large batch size https://arxiv.org/abs/1706.02677
     lr = linear_rampup(num_steps, cfg.lr_rampup_length) * (lr - cfg.initial_lr) + cfg.initial_lr
@@ -58,7 +58,7 @@ def accuracy(preds, targets, topk=(1,)):
     
     res = []
     for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True).cpu()
         res.append(correct_k*100/labeled_batch_size)
 
     return res
