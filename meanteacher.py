@@ -22,13 +22,22 @@ class Base:
         self.sup_criterion = nn.CrossEntropyLoss(ignore_index=self.cfg.NO_LABEL) # mark -1 as unlabeled data
         self.optimizer = None
 
-    def _set_device(self):
+    def _set_device(self, device):
         if self.cfg.device_ids != 'cpu' and len(self.cfg.device_ids) > 1:
-            self.model = nn.DataParallel(
-                self.model, device_ids=self.cfg.device_ids).to(self.cfg.device)
+            # self.model = nn.DataParallel(
+            #     self.model, device_ids=self.cfg.device_ids).to(self.cfg.device)
 
-            self.ema_model = nn.DataParallel(
-                self.ema_model, device_ids=self.cfg.device_ids).to(self.cfg.device)
+            # self.ema_model = nn.DataParallel(
+            #     self.ema_model, device_ids=self.cfg.device_ids).to(self.cfg.device)
+
+            self.model = self.model.to(device)
+            self.ema_model = self.ema_model.to(device)
+            ###############################################################
+            self.model = nn.parallel.DistributedDataParallel(self.model,
+                                                    device_ids=[device])
+            self.ema_model = nn.parallel.DistributedDataParallel(self.ema_model,
+                                                    device_ids=[device])
+            ###############################################################
         else:
             self.model = self.model.to(self.cfg.device)
             self.ema_model = self.ema_model.to(self.cfg.device)
@@ -37,7 +46,7 @@ class Base:
             for state in self.optimizer.state.values():
                 for k, v in state.items():
                     if isinstance(v, torch.Tensor):
-                        state[k] = v.to(device=self.cfg.device, non_blocking=True)
+                        state[k] = v.to(device=device, non_blocking=True)
 
 class Tester(Base):
     def __init__(self, cfg, 
@@ -139,7 +148,7 @@ class Trainer(Base):
         meters = collections.defaultdict(lambda: AverageMeter())
 
         for i, ((data, ema_data), targets) in enumerate(data_loader):
-            pbar.set_description(f"Train Epoch: {epoch} [{i}/{len(pbar)}]")
+            pbar.set_description(f"Local rank: {self.cfg.local_rank}, Train Epoch: {epoch} [{i}/{len(pbar)}]")
 
             lr_schedule(self.optimizer, epoch, self.cfg, i, len(data_loader))
 
@@ -203,7 +212,7 @@ class Trainer(Base):
             self.ema_updater.copy_to(self.ema_model.parameters())
 
             # print log
-            if i % self.cfg.print_interval == 0:
+            if i % self.cfg.print_interval == 0 and self.cfg.local_rank == 0:
                 pbar.set_postfix(
                     student_sup_loss=student_sup_loss.item(),
                     teacher_sup_loss=teacher_sup_loss.item(),
@@ -216,12 +225,13 @@ class Trainer(Base):
                     teacher_top5_acc=teacher_top5_acc,
                 )
 
-        # logging
-        for k, v in meters.items():
-            if "top" in k: # train_acc
-                self.writer.add_scalar(f"train_acc/{k}", v.avg, epoch)
-            else: # train_loss
-                self.writer.add_scalar(f"train_loss/{k}", v.avg, epoch)
+        if self.cfg.local_rank == 0:
+            # logging
+            for k, v in meters.items():
+                if "top" in k: # train_acc
+                    self.writer.add_scalar(f"train_acc/{k}", v.avg, epoch)
+                else: # train_loss
+                    self.writer.add_scalar(f"train_loss/{k}", v.avg, epoch)
 
         pbar.close()
 
@@ -239,7 +249,7 @@ class Trainer(Base):
         meters = collections.defaultdict(lambda: AverageMeter())
 
         for i, (data, targets) in enumerate(pbar):
-            pbar.set_description(f"Val Epoch: {epoch} [{i}/{len(pbar)}]")
+            pbar.set_description(f"Local rank: {self.cfg.local_rank}, Val Epoch: {epoch} [{i}/{len(pbar)}]")
 
             data = data.to(self.cfg.device)
             targets = targets.to(self.cfg.device)
@@ -276,7 +286,7 @@ class Trainer(Base):
             meters["teacher_top5_error"].update(100.-teacher_top5_acc, labeled_batch_size)
 
             # print log
-            if i % self.cfg.print_interval == 0:
+            if i % self.cfg.print_interval == 0 and self.cfg.local_rank == 0:
                 pbar.set_postfix(
                     student_sup_loss=student_sup_loss.item(),
                     teacher_sup_loss=teacher_sup_loss.item(),
@@ -287,12 +297,13 @@ class Trainer(Base):
                 )
 
         # logging
-        if self.writer:
-            for k, v in meters.items():
-                if "top" in k: # train_acc
-                    self.writer.add_scalar(f"val_acc/{k}", v.avg, epoch)
-                else: # train_loss
-                    self.writer.add_scalar(f"val_loss/{k}", v.avg, epoch)
+        if self.cfg.local_rank == 0:
+            if self.writer:
+                for k, v in meters.items():
+                    if "top" in k: # train_acc
+                        self.writer.add_scalar(f"val_acc/{k}", v.avg, epoch)
+                    else: # train_loss
+                        self.writer.add_scalar(f"val_loss/{k}", v.avg, epoch)
 
         return meters["student_top1_acc"].avg, meters["teacher_top1_acc"].avg
 

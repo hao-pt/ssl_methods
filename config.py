@@ -55,6 +55,16 @@ class Config:
             help="Number of data loaders")
         facility_group.add_argument("--master_batch_size", type=int, default=-1,
             help="Batch size of main gpu oftens 0")
+        facility_group.add_argument("--use_ddp", action='store_true', 
+            help="Using DDP for multi-gpu training")
+        # facility_group.add_argument("--local_rank", default=0, 
+        #     help="rank of nodes")
+        # facility_group.add_argument('--nodes', default=1, type=int, 
+        #     help="number of nodes")
+        # facility_group.add_argument("--gpus", default=1, type=int,
+        #     help='number of gpus per node')
+        # facility_group.add_argument('--node_rank', default=0, type=int,
+        #     help='ranking within the nodes range from 0 to nodes-1')
 
         hyper_param_group = parser.add_argument_group(title='Hyperameter group')
         hyper_param_group.add_argument("--epochs", type=int, default=180,

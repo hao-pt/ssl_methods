@@ -65,10 +65,21 @@ def create_data_loaders(datadir, cfgs):
         batch_sampler = TwoStreamBatchSampler(
             unlabeled_idxs, labeled_idxs, cfgs.batch_size, cfgs.labeled_batch_size)
 
+    # ######################################################################
+    # train_sampler = None
+    # if cfgs.use_ddp:
+    #     train_sampler = torch.utils.data.distributed.DistributedSampler(
+    #         dataset,
+    #         num_replicas=cfgs.world_size,
+    #         rank=cfgs.local_rank)
+    # #######################################################################
+
     train_loader = torch.utils.data.DataLoader(dataset,
+                                            #    sampler=train_sampler,
                                                batch_sampler=batch_sampler,
                                                num_workers=cfgs.workers,
-                                               pin_memory=True)
+                                               pin_memory=True,
+                                               shuffle=False)
 
     eval_loader = torch.utils.data.DataLoader(
         torchvision.datasets.ImageFolder(evaldir, eval_transformation),

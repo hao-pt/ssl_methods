@@ -6,7 +6,6 @@ from torch.autograd import Variable
 import numpy as np
 
 
-
 class BottleNeck(nn.Module):
     def __init__(self, in_ch, out_ch, times) -> None:
         super(BottleNeck, self).__init__()
