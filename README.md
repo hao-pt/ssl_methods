@@ -19,6 +19,7 @@ python data/download_cifar10.py --data_dir datadir
 Train on CIFAR10
 ```
 python main.py \
+    --data_dir datadir/cifar10/ \
     --dataset cifar10 \
     --labels data/cifar10_labels/4000_balanced_labels/00.txt \
     --model_arch shake_resnet26 \

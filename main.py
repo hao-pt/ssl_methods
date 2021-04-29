@@ -73,23 +73,23 @@ def train(cfg):
 
     device, local_rank = setup(distributed=cfg.use_ddp)
     torch.cuda.set_device(device)
-    torch.set_num_threads(1) # #cpu_threads / #process_per_node
+    if cfg.use_ddp:
+        torch.set_num_threads(1) # #cpu_threads / #process_per_node
 
     cfg.local_rank = local_rank
-    is_main_gpu = int(os.environ.get('RANK')) == 0
+    is_main_gpu = not cfg.use_ddp or int(os.environ.get('RANK')) == 0
 
     # dataset
     train_loader, val_loader = create_data_loaders(cfg.data_dir, cfg)
 
-    # if cfg.use_ddp:
-    #     # Use a barrier() to make sure that process 1 loads the model after process
-    #     # 0 saves it.
-    #     dist.barrier()
+    if cfg.use_ddp:
+        # Use a barrier() to make sure that process 1 loads the model after process
+        # 0 saves it.
+        dist.barrier()
     
     # create model
     model = get_model(cfg.model_arch, pretrained=cfg.pretrained)
     ema_model = get_model(cfg.model_arch, pretrained=cfg.pretrained, ema=True)
-
 
     # resume training / load trained weights
     last_epoch = 0

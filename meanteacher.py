@@ -72,7 +72,7 @@ class Tester(Base):
             spreds = self.model(data)
             
             # validate teacher on data
-            tpreds = self.model(data)
+            tpreds = self.ema_model(data)
 
             # compute supervised loss for student predictions
             spreds_softm = F.softmax(spreds, dim=1)
@@ -161,7 +161,7 @@ class Trainer(Base):
             
             # Train teacher on batch2
             with torch.no_grad():
-                tpreds = self.model(tdata)
+                tpreds = self.ema_model(tdata)
                 tpreds.requires_grad = False # disable gradient
 
             # compute supervised loss for student predictions
@@ -259,7 +259,7 @@ class Trainer(Base):
             spreds = self.model(data)
             
             # validate teacher on data
-            tpreds = self.model(data)
+            tpreds = self.ema_model(data)
 
             # compute supervised loss for student predictions
             spreds_softm = F.softmax(spreds, dim=1)
