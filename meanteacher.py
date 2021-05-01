@@ -19,7 +19,7 @@ class Base:
         self.model = model
         self.ema_model = ema_model
 
-        self.sup_criterion = nn.CrossEntropyLoss(ignore_index=self.cfg.NO_LABEL) # mark -1 as unlabeled data
+        self.sup_criterion = nn.CrossEntropyLoss(reduction="sum", ignore_index=self.cfg.NO_LABEL) # mark -1 as unlabeled data
         self.optimizer = None
 
     def _set_device(self, device):
@@ -67,6 +67,7 @@ class Tester(Base):
             data = data.to(self.cfg.device)
             targets = targets.to(self.cfg.device)
             labeled_batch_size = targets.ne(self.cfg.NO_LABEL).sum()
+            minibatch_size = len(targets)
 
             # validate student on data
             spreds = self.model(data)
@@ -76,12 +77,12 @@ class Tester(Base):
 
             # compute supervised loss for student predictions
             spreds_softm = F.softmax(spreds, dim=1)
-            student_sup_loss = self.sup_criterion(spreds, targets) 
+            student_sup_loss = self.sup_criterion(spreds, targets) / minibatch_size
             meters["student_sup_loss"].update(student_sup_loss.item())
 
             # compute supervised loss for teacher predictions
             tpreds_softm = F.softmax(tpreds, dim=1)
-            teacher_sup_loss = self.sup_criterion(tpreds, targets) 
+            teacher_sup_loss = self.sup_criterion(tpreds, targets) / minibatch_size
             meters["teacher_sup_loss"].update(teacher_sup_loss.item())
 
             # compute accuracy and error for student model
@@ -134,7 +135,7 @@ class Trainer(Base):
         optimizer):
         super().__init__(cfg, model, ema_model)
         self.optimizer = optimizer
-        self.unp_criterion = nn.MSELoss()
+        self.unp_criterion = nn.MSELoss(reduction="sum")
         self.writer = None
 
     def _create_summary_writer(self, rundir):
@@ -155,6 +156,7 @@ class Trainer(Base):
             sdata, tdata = data.to(self.cfg.device), ema_data.to(self.cfg.device)
             targets = targets.to(self.cfg.device)
             labeled_batch_size = targets.ne(-1).sum()
+            mini_batch_size = len(targets)
 
             # Train student on batch1
             spreds = self.model(sdata)
@@ -165,26 +167,26 @@ class Trainer(Base):
                 tpreds.requires_grad = False # disable gradient
 
             # compute supervised loss for student predictions
-            student_sup_loss = self.sup_criterion(spreds, targets) 
+            student_sup_loss = self.sup_criterion(spreds, targets) / mini_batch_size
             meters["student_sup_loss"].update(student_sup_loss.item())
 
             # compute supervised loss for teacher predictions
-            teacher_sup_loss = self.sup_criterion(tpreds, targets) 
+            teacher_sup_loss = self.sup_criterion(tpreds, targets) / mini_batch_size
             meters["teacher_sup_loss"].update(teacher_sup_loss.item())
 
             # compute unsupervised loss between teacher and student predictions
             if self.cfg.unp_weight:
                 spreds_softm = F.softmax(spreds, dim=1)
                 tpreds_softm = F.softmax(tpreds, dim=1)
-                unp_loss = self.unp_criterion(spreds_softm, tpreds_softm) / self.cfg.num_classes
+                alpha = consistency_rampup_weight(self.cfg.unp_weight, epoch, self.cfg.rampup_length)
+                unp_loss = alpha*(self.unp_criterion(spreds_softm, tpreds_softm) / self.cfg.num_classes) / mini_batch_size
                 meters["unp_loss"].update(unp_loss.item())
             else:
                 unp_loss = 0.0
                 meters["unp_loss"].update(unp_loss.item())
 
             # main objective
-            alpha = consistency_rampup_weight(self.cfg.unp_weight, epoch, self.cfg.rampup_length)
-            loss = student_sup_loss + alpha*unp_loss
+            loss = student_sup_loss + unp_loss
             meters["loss"].update(loss.item())
             meters["consistency_weight"].update(alpha)
 
@@ -254,6 +256,7 @@ class Trainer(Base):
             data = data.to(self.cfg.device)
             targets = targets.to(self.cfg.device)
             labeled_batch_size = targets.ne(self.cfg.NO_LABEL).sum()
+            mini_batch_size = len(targets)
 
             # validate student on data
             spreds = self.model(data)
@@ -263,12 +266,12 @@ class Trainer(Base):
 
             # compute supervised loss for student predictions
             spreds_softm = F.softmax(spreds, dim=1)
-            student_sup_loss = self.sup_criterion(spreds, targets) 
+            student_sup_loss = self.sup_criterion(spreds, targets) / mini_batch_size
             meters["student_sup_loss"].update(student_sup_loss.item())
 
             # compute supervised loss for teacher predictions
             tpreds_softm = F.softmax(tpreds, dim=1)
-            teacher_sup_loss = self.sup_criterion(tpreds, targets) 
+            teacher_sup_loss = self.sup_criterion(tpreds, targets) / mini_batch_size
             meters["teacher_sup_loss"].update(teacher_sup_loss.item())
 
             # compute accuracy and error for student model

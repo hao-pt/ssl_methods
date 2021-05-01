@@ -119,7 +119,8 @@ def train(cfg):
 
 
     is_best, best_acc = False, 0.0
-    ckpt_dir = f"{cfg.weight_dir}/{cfg.dataset}/meanteacher"
+    trial = os.path.split(cfg.labels)[1].split(".")[0]
+    ckpt_dir = f"{cfg.weight_dir}/{cfg.dataset}/meanteacher{trial}"
     os.makedirs(ckpt_dir, exist_ok=True)
 
     for epoch in range(last_epoch, cfg.epochs):

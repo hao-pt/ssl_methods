@@ -68,7 +68,7 @@ class ExponentialMovingAverage:
             parameters = [p for p in parameters if p.requires_grad]
             for s_param, param in zip(self.shadow_params, parameters):
                 # theta'(t) = alpha * theta'(t-1) + (1-alpha) * theta(t)
-                s_param.mul_(alpha).add_(1-alpha, param.data.clone())
+                s_param.mul_(alpha).add_(1-alpha, param.data)
         
     def copy_to(self, parameters):
         """

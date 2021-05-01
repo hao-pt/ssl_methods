@@ -27,7 +27,8 @@ python main.py \
     --rampup_length 5 \
     --labeled_batch_size 62 \
     --batch_size 256 \
-    --epochs 180
+    --epochs 180 \
+    --device_ids 0
 ```
 Distributed training
 ```
