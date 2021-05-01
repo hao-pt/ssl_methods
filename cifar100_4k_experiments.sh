@@ -22,7 +22,7 @@ do
     # test
     python test.py --data_dir datadir/cifar10/ \
     --batch_size 20 \
-    --resume weights/cifar10/meanteacher/best_model.ckpt \
+    --resume weights/cifar10/meanteacher$trial/best_model.ckpt \
     --test_set test \
     --device_ids 0
 

@@ -29,6 +29,6 @@ if __name__ == "__main__":
     
     # create trainer
     tester = Tester(cfg, model, ema_model)
-    tester._set_device() 
+    tester._set_device(cfg.device) 
 
     results = tester(eval_loader)

@@ -60,7 +60,7 @@ class ExponentialMovingAverage:
         alpha = self.decay
         self.num_updates += 1
         if self.use_num_updates:
-            alpha = min(1-1/(self.num_updates+1), alpha) # use normal average until model is better at later step
+            alpha = max(1-1/(self.num_updates+1), alpha) # use normal average until model is better at later step
         else:
             alpha = self.decay if self.num_updates > self.rampup_steps else self.rampup_decay 
 
