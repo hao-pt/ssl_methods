@@ -126,7 +126,7 @@ def train(cfg):
     for epoch in range(last_epoch, cfg.epochs):
         trainer.train(epoch, train_loader)
 
-        if epoch % cfg.eval_interval == 0:
+        if (epoch+1) % cfg.eval_interval == 0:
             # get top-1 accuracy of student and teacher
             acc, ema_acc = trainer.val(epoch, val_loader)
             

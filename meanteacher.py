@@ -100,7 +100,7 @@ class Tester(Base):
             meters["teacher_top5_error"].update(100.-teacher_top5_acc, labeled_batch_size)
 
             # print log
-            if i % self.cfg.print_interval == 0:
+            if (i+1) % self.cfg.print_interval == 0:
                 pbar.set_postfix(
                     student_sup_loss=student_sup_loss.item(),
                     teacher_sup_loss=teacher_sup_loss.item(),
@@ -137,9 +137,11 @@ class Trainer(Base):
         self.optimizer = optimizer
         self.unp_criterion = nn.MSELoss(reduction="sum")
         self.writer = None
+        self.log_f = None
 
     def _create_summary_writer(self, rundir):
         self.writer = SummaryWriter(rundir)
+        self.log_f = open(f"{rundir}/training_log.txt", "wt")
 
     def train(self, epoch, data_loader):
         self.model.train()
@@ -148,8 +150,9 @@ class Trainer(Base):
         pbar = tqdm(data_loader)
         meters = collections.defaultdict(lambda: AverageMeter())
 
-        for i, ((data, ema_data), targets) in enumerate(data_loader):
+        for i, ((data, ema_data), targets) in enumerate(pbar):
             pbar.set_description(f"Local rank: {self.cfg.local_rank}, Train Epoch: {epoch} [{i}/{len(pbar)}]")
+            self.log_f.write(f"Local rank: {self.cfg.local_rank}, Train Epoch: {epoch} [{i}/{len(pbar)}]\n")
 
             lr_schedule(self.optimizer, epoch, self.cfg, i, len(data_loader))
 
@@ -209,31 +212,41 @@ class Trainer(Base):
             loss.backward()
             self.optimizer.step() # update weights
             
+
+            # print("Input ema:", list(self.ema_model.parameters())[0][0][0][0])
+            # print("Input param:", list(self.model.parameters())[0][0][0][0])
             # perform EMA on weigths of student model
             self.ema_updater.update(self.model.parameters())
             self.ema_updater.copy_to(self.ema_model.parameters())
+            # print("Output ema:", list(self.ema_model.parameters())[0][0][0][0])
 
             # print log
-            if i % self.cfg.print_interval == 0 and self.cfg.local_rank == 0:
-                pbar.set_postfix(
-                    student_sup_loss=student_sup_loss.item(),
-                    teacher_sup_loss=teacher_sup_loss.item(),
-                    unp_loss=unp_loss.item(),
-                    consistency_weight=alpha,
-                    loss=loss.item(),
-                    student_top1_acc=student_top1_acc,
-                    student_top5_acc=student_top5_acc,
-                    teacher_top1_acc=teacher_top1_acc,
-                    teacher_top5_acc=teacher_top5_acc,
-                )
+            if (i+1) % self.cfg.print_interval == 0 and self.cfg.local_rank == 0:
+                log_dict = {
+                    "student_sup_loss":student_sup_loss.item(),
+                    "teacher_sup_loss":teacher_sup_loss.item(),
+                    "unp_loss":unp_loss.item(),
+                    "consistency_weight":alpha,
+                    "loss":loss.item(),
+                    "student_top1_acc":student_top1_acc,
+                    "student_top5_acc":student_top5_acc,
+                    "teacher_top1_acc":teacher_top1_acc,
+                    "teacher_top5_acc":teacher_top5_acc
+                }
+                pbar.set_postfix(**log_dict)
+                # self.log_f.write(str(log_dict)+"\n") # write to file
 
         if self.cfg.local_rank == 0:
             # logging
             for k, v in meters.items():
                 if "top" in k: # train_acc
                     self.writer.add_scalar(f"train_acc/{k}", v.avg, epoch)
+                    self.log_f.write(f"train_acc/{k}:{v.avg} ")
                 else: # train_loss
                     self.writer.add_scalar(f"train_loss/{k}", v.avg, epoch)
+                    self.log_f.write(f"train_loss/{k}:{v.avg} ")
+
+                self.log_f.write("\n")
 
         pbar.close()
 
@@ -252,6 +265,7 @@ class Trainer(Base):
 
         for i, (data, targets) in enumerate(pbar):
             pbar.set_description(f"Local rank: {self.cfg.local_rank}, Val Epoch: {epoch} [{i}/{len(pbar)}]")
+            self.log_f.write(f"Local rank: {self.cfg.local_rank}, Val Epoch: {epoch} [{i}/{len(pbar)}]\n")
 
             data = data.to(self.cfg.device)
             targets = targets.to(self.cfg.device)
@@ -289,15 +303,17 @@ class Trainer(Base):
             meters["teacher_top5_error"].update(100.-teacher_top5_acc, labeled_batch_size)
 
             # print log
-            if i % self.cfg.print_interval == 0 and self.cfg.local_rank == 0:
-                pbar.set_postfix(
-                    student_sup_loss=student_sup_loss.item(),
-                    teacher_sup_loss=teacher_sup_loss.item(),
-                    student_top1_acc=student_top1_acc,
-                    student_top5_acc=student_top5_acc,
-                    teacher_top1_acc=teacher_top1_acc,
-                    teacher_top5_acc=teacher_top5_acc,
-                )
+            if (i+1) % self.cfg.print_interval == 0 and self.cfg.local_rank == 0:
+                log_dict = { 
+                   "student_sup_loss":student_sup_loss.item(),
+                   "teacher_sup_loss":teacher_sup_loss.item(),
+                   "student_top1_acc":student_top1_acc,
+                   "student_top5_acc":student_top5_acc,
+                   "teacher_top1_acc":teacher_top1_acc,
+                   "teacher_top5_acc":teacher_top5_acc,
+                }
+                pbar.set_postfix(**log_dict)
+                # self.log_f.write(str(log_dict)+"\n") # write to file
 
         # logging
         if self.cfg.local_rank == 0:
@@ -305,18 +321,22 @@ class Trainer(Base):
                 for k, v in meters.items():
                     if "top" in k: # train_acc
                         self.writer.add_scalar(f"val_acc/{k}", v.avg, epoch)
+                        self.log_f.write(f"val_acc/{k}:{v.avg} ")
                     else: # train_loss
                         self.writer.add_scalar(f"val_loss/{k}", v.avg, epoch)
+                        self.log_f.write(f"val_loss/{k}:{v.avg} ")
+                
+                self.log_f.write("/n")
 
         return meters["student_top1_acc"].avg, meters["teacher_top1_acc"].avg
 
     def _create_ema_updater(self):
-        self.ema_updater = ExponentialMovingAverage(self.model.parameters(), self.cfg.ema_decay, 
+        self.ema_updater = ExponentialMovingAverage(self.ema_model.parameters(), self.cfg.ema_decay, 
                 use_num_updates=self.cfg.use_num_updates, rampup_steps=self.cfg.rampup_steps,
                 rampup_decay=self.cfg.rampup_decay)
-        self.ema_updater.store(self.model.parameters()) # store pretrained weights of model
+        # self.ema_updater.store(self.model.parameters()) # store pretrained weights of model
         # self.ema_updater.copy_to(self.ema_model.parameters()) # load weight for ema_model
-        self.ema_updater.set_params(self.model.parameters()) # set initial params
+        # self.ema_updater.set_params(self.model.parameters()) # set initial params
         
 
 if __name__ == "__main__":

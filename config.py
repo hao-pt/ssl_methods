@@ -87,7 +87,7 @@ class Config:
             help="Print interval for training")
         hyper_param_group.add_argument("--ema_decay", type=float, default=0.999,
             help="Ema decay rate")
-        hyper_param_group.add_argument("--use_num_updates", action="store_true",
+        hyper_param_group.add_argument("--use_num_updates", action="store_false",
             help="Use number of updates to compute ema decay")
         hyper_param_group.add_argument('--rampup_decay', type=float, default=0.99,
             help='Ema decay during rampup phase')
