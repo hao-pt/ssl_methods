@@ -123,4 +123,5 @@ bash cifar100_4k_experiments.sh
 
 # Reference:
 [1] Tarvainen, Antti, and Harri Valpola. "Mean teachers are better role models: Weight-averaged consistency targets improve semi-supervised deep learning results." arXiv preprint arXiv:1703.01780 (2017). [[paper]](https://arxiv.org/pdf/1703.01780.pdf)[[repo]](https://github.com/CuriousAI/mean-teacher/tree/master/pytorch)
+
 [2] [pytorch_ema](https://github.com/fadel/pytorch_ema.git)
