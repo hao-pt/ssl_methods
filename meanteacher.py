@@ -246,7 +246,7 @@ class Trainer(Base):
                     self.writer.add_scalar(f"train_loss/{k}", v.avg, epoch)
                     self.log_f.write(f"{k}:{v.avg} ")
 
-                self.log_f.write("\n")
+            self.log_f.write("\n")
 
         pbar.close()
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+mkdir -p /mnt/vinai/meanteacher/weights/cifar10_1k
 # Basic while loop
 counter=10
 while [ $counter -lt 20 ]
@@ -29,6 +30,9 @@ do
     --resume weights/cifar10/meanteacher$trial/best_model.ckpt \
     --test_set test \
     --device_ids 0
+
+    # cp trained weights
+    cp weights/cifar10/meanteacher$trial /mnt/vinai/meanteacher/weights/cifar10_1k
 
     ((counter++))
 done
