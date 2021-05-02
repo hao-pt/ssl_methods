@@ -1,6 +1,6 @@
 #!/bin/bash
 # Basic while loop
-counter=0
+counter=10
 while [ $counter -lt 20 ]
 do
     echo Trial $counter
