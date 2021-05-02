@@ -152,7 +152,6 @@ class Trainer(Base):
 
         for i, ((data, ema_data), targets) in enumerate(pbar):
             pbar.set_description(f"Local rank: {self.cfg.local_rank}, Train Epoch: {epoch} [{i}/{len(pbar)}]")
-            self.log_f.write(f"Local rank: {self.cfg.local_rank}, Train Epoch: {epoch} [{i}/{len(pbar)}]\n")
 
             lr_schedule(self.optimizer, epoch, self.cfg, i, len(data_loader))
 
@@ -238,6 +237,7 @@ class Trainer(Base):
 
         if self.cfg.local_rank == 0:
             # logging
+            self.log_f.write(f"Local rank: {self.cfg.local_rank}, Train Epoch: {epoch} [---/{len(pbar)}]\n")
             for k, v in meters.items():
                 if "top" in k: # train_acc
                     self.writer.add_scalar(f"train_acc/{k}", v.avg, epoch)
@@ -265,7 +265,6 @@ class Trainer(Base):
 
         for i, (data, targets) in enumerate(pbar):
             pbar.set_description(f"Local rank: {self.cfg.local_rank}, Val Epoch: {epoch} [{i}/{len(pbar)}]")
-            self.log_f.write(f"Local rank: {self.cfg.local_rank}, Val Epoch: {epoch} [{i}/{len(pbar)}]\n")
 
             data = data.to(self.cfg.device)
             targets = targets.to(self.cfg.device)
@@ -317,16 +316,16 @@ class Trainer(Base):
 
         # logging
         if self.cfg.local_rank == 0:
-            if self.writer:
-                for k, v in meters.items():
-                    if "top" in k: # train_acc
-                        self.writer.add_scalar(f"val_acc/{k}", v.avg, epoch)
-                        self.log_f.write(f"val_acc/{k}:{v.avg} ")
-                    else: # train_loss
-                        self.writer.add_scalar(f"val_loss/{k}", v.avg, epoch)
-                        self.log_f.write(f"val_loss/{k}:{v.avg} ")
-                
-                self.log_f.write("/n")
+            self.log_f.write(f"Local rank: {self.cfg.local_rank}, Val Epoch: {epoch} [---/{len(pbar)}]\n")
+            for k, v in meters.items():
+                if "top" in k: # train_acc
+                    self.writer.add_scalar(f"val_acc/{k}", v.avg, epoch)
+                    self.log_f.write(f"val_acc/{k}:{v.avg} ")
+                else: # train_loss
+                    self.writer.add_scalar(f"val_loss/{k}", v.avg, epoch)
+                    self.log_f.write(f"val_loss/{k}:{v.avg} ")
+            
+            self.log_f.write("\n")
 
         return meters["student_top1_acc"].avg, meters["teacher_top1_acc"].avg
 
