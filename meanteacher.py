@@ -241,10 +241,10 @@ class Trainer(Base):
             for k, v in meters.items():
                 if "top" in k: # train_acc
                     self.writer.add_scalar(f"train_acc/{k}", v.avg, epoch)
-                    self.log_f.write(f"train_acc/{k}:{v.avg} ")
+                    self.log_f.write(f"{k}:{v.avg} ")
                 else: # train_loss
                     self.writer.add_scalar(f"train_loss/{k}", v.avg, epoch)
-                    self.log_f.write(f"train_loss/{k}:{v.avg} ")
+                    self.log_f.write(f"{k}:{v.avg} ")
 
                 self.log_f.write("\n")
 
@@ -320,10 +320,10 @@ class Trainer(Base):
             for k, v in meters.items():
                 if "top" in k: # train_acc
                     self.writer.add_scalar(f"val_acc/{k}", v.avg, epoch)
-                    self.log_f.write(f"val_acc/{k}:{v.avg} ")
+                    self.log_f.write(f"{k}:{v.avg} ")
                 else: # train_loss
                     self.writer.add_scalar(f"val_loss/{k}", v.avg, epoch)
-                    self.log_f.write(f"val_loss/{k}:{v.avg} ")
+                    self.log_f.write(f"{k}:{v.avg} ")
             
             self.log_f.write("\n")
 
