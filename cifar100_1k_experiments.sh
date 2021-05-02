@@ -11,7 +11,7 @@ do
     python main.py \
     --data_dir datadir/cifar10/ \
     --dataset cifar10 \
-    --labels data/cifar10_labels/4000_balanced_labels/$trial.txt \
+    --labels data/cifar10_labels/1000_balanced_labels/$trial.txt \
     --model_arch shake_resnet26 \
     --weight_decay 2e-4 \
     --unp_weight 100 \
