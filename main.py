@@ -107,6 +107,7 @@ def train(cfg):
     optimizer = torch.optim.SGD(
         model.parameters(), 
         cfg.lr, 
+        momentum=cfg.momentum,
         weight_decay=cfg.weight_decay,
         nesterov=cfg.nesterov)
 

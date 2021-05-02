@@ -103,6 +103,8 @@ class Config:
             help='Initial learning rate for linear rampup')
         hyper_param_group.add_argument('--resume', type=str, default="",
             help='Resume training by trained weights')
+        hyper_param_group.add_argument('--momentum', default=0.9, type=float,
+                        help='momentum')
 
         return parser.parse_args(namespace=self)
 

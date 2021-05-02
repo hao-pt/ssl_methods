@@ -17,10 +17,10 @@ do
     --rampup_length 5 \
     --batch_size 512 \
     --labeled_batch_size 124 \
-    --epochs 300 \
-    --ema_decay 0.99 \
+    --epochs 180 \
+    --ema_decay 0.97 \
     --nesterov True \
-    --lr_rampdown_length 350 \
+    --lr_rampdown_length 210 \
     --device_ids 0
 
     # test
