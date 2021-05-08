@@ -145,6 +145,8 @@ def train(cfg):
                 "ema_state_dict": trainer.ema_model.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "best_acc": best_acc}, is_best, epoch)
+    
+    print(f"Best acc@1: {best_acc}")
 
     if cfg.use_ddp:
         torch.distributed.destroy_process_group()
