@@ -2,10 +2,12 @@ import torch
 import torchvision.models as models
 
 from resnet import ShakeResNet
+import wrn
 
 
-def get_wide_resnet(pretrained=True):
-    model = models.wide_resnet50_2(pretrained)
+def get_wide_resnet(dropout_rate, num_classes, pretrained=True):
+    # model = models.wide_resnet50_2(pretrained)
+    model = wrn.wrn_40_2(dropout_rate, num_classes)
     return model
 
 def get_resnet(pretrained=True):

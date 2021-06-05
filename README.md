@@ -113,13 +113,47 @@ python test.py --data_dir datadir/cifar10/ \
 # Reproduce results:
 Do 10 runs on 1000-labeled CIFAR10:
 ```bash
-bash cifar100_1k_experiments.sh
+bash cifar10_1k_experiments.sh
 ```
 
 Do 10 runs on 4000-labeled CIFAR10:
 ```bash
-bash cifar100_4k_experiments.sh
+bash cifar10_4k_experiments.sh
 ```
+
+# Results:
+Average results over 10 runs on CIFAR10 with 4k labeled images:
+
+<table style="width:100%">
+  <tr>
+    <th></th>
+    <th>student_top1</th>
+    <th>teacher_top1</th>
+    <th>student_top5</th>
+    <th>teacher_top5</th>
+  </tr>
+  <tr>
+    <td><b>my acc</b></td>
+    <td>91.12 &plusmn .54 </td>
+    <td>91.59 &plusmn .36 </td>
+    <td>99.63 &plusmn .07 </td>
+    <td>99.72 &plusmn .05 </td>
+  </tr>
+  <tr>
+    <td><b>my err</b></td>
+    <td>8.88 &plusmn .54 </td>
+    <td>8.41 &plusmn .36 </td>
+    <td>.37 &plusmn .07 </td>
+    <td>.28 &plusmn .05 </td>
+  </tr>
+  <tr>
+    <td><b>paper err</b></td>
+    <td>-</td>
+    <td>6.28 &plusmn .15</td>
+    <td>-</td>
+    <td>-</td>
+  </tr>
+</table>
 
 # Reference:
 [1] Tarvainen, Antti, and Harri Valpola. "Mean teachers are better role models: Weight-averaged consistency targets improve semi-supervised deep learning results." arXiv preprint arXiv:1703.01780 (2017). [[paper]](https://arxiv.org/pdf/1703.01780.pdf)[[repo]](https://github.com/CuriousAI/mean-teacher/tree/master/pytorch)
